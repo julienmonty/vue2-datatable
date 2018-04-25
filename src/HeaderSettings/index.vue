@@ -1,10 +1,10 @@
 <template>
-  <div class="btn-group" name="HeaderSettings">
-    <button class="btn btn-default dropdown-toggle" ref="dropdownBtn" type="button">
+  <div class="dropdown" name="HeaderSettings">
+    <button class="btn btn-default dropdown-toggle" id="dropdownHeaderSettingsButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" type="button">
       <i class="fa" :class="[usingBak && 'text-info', processingCls || 'fa-cog']"></i>
       <span class="caret"></span>
     </button>
-    <div class="dropdown-menu clearfix" :style="drpMenuStyle">
+    <div class="dropdown-menu dropdown-menu-right" :style="drpMenuStyle" aria-labelledby="dropdownHeaderSettingsButton">
       <div class="-col-group-container">
         <column-group v-for="(columns, groupName) in colGroups"
           ref="colGroups" :key="groupName"
@@ -13,28 +13,12 @@
       </div>
       <div class="clearfix" style="margin: 10px 0">
         <div class="btn-group btn-group-sm pull-right">
-          <button class="btn btn-default" type="button" @click="apply()">
+          <button v-if="supportBackup" class="btn btn-default" type="button" @click="apply(true)">
             {{ $i18nForDatatable('Apply') }}
           </button>
-          <template v-if="supportBackup">
-            <button data-toggle="dropdown" class="btn btn-default dropdown-toggle" type="button" style="box-shadow: none">
-              <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu">
-              <li @click="apply(true)">
-                <a href="#" @click.prevent>
-                  <i class="fa fa-floppy-o"></i>&nbsp;
-                  {{ $i18nForDatatable('Apply and backup settings to local') }}
-                </a>
-              </li>
-              <li v-if="usingBak" @click="rmBackup()">
-                <a href="#" @click.prevent>
-                  <i class="fa fa-trash-o text-danger"></i>&nbsp;
-                  {{ $i18nForDatatable('Clear local settings backup and restore') }}
-                </a>
-              </li>
-            </ul>
-          </template>
+          <button v-else class="btn btn-default" type="button" @click="apply()">
+            {{ $i18nForDatatable('Apply') }}
+          </button>
         </div>
       </div>
       <small v-if="usingBak" class="pull-left text-muted" style="margin-top: -8px">
@@ -75,14 +59,6 @@ export default {
     replaceWith(this.columns, backup)
     this.usingBak = true
   },
-  mounted () {
-    // control dropdown manually (refers to http://jsfiddle.net/rj3k550m/3)
-    const $el = $(this.$el)
-    $(this.$refs.dropdownBtn).on('click', this.toggle)
-    $(document).on('click', e => {
-      $(e.target).closest($el).length || $el.removeClass('open')
-    })
-  },
   computed: {
     colGroups () {
       return groupBy(
@@ -101,7 +77,6 @@ export default {
   },
   methods: {
     apply (alsoBackup) {
-      this.toggle()
       this.$refs.colGroups.forEach(colGroup => { colGroup.apply() })
       alsoBackup && this.$nextTick(this.backup)
     },
@@ -116,9 +91,6 @@ export default {
       this.usingBak = false
       
       replaceWith(this.columns, parseStr(this.origSettings)) // restore
-    },
-    toggle () {
-      $(this.$el).toggleClass('open')
     },
     showProcessing () {
       ['fa-spinner fa-pulse', 'fa-check', ''].forEach((cls, idx) => {
